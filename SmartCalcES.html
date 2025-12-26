@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartCalc ES v3.6</title>
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.js"></script>
+
+<style>
+:root{
+  --glass: rgba(255,255,255,0.25);
+  --blur: blur(14px);
+  --txt:#fff;
+}
+body{margin:0;font-family:Arial,sans-serif;background:#000;color:var(--txt);overflow:hidden;}
+body.light{color:#000;background:#f2f2f2;}
+
+/* Splash */
+#splash{
+  position:fixed;inset:0;
+  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+  display:flex;align-items:center;justify-content:center;
+  z-index:9999;
+}
+#splash div{text-align:center;color:white}
+#splash h1{margin:0;font-size:28px}
+#splash p{opacity:0.7}
+
+/* Background */
+#bg{position:fixed;inset:0;background-size:cover;background-position:center;z-index:-1;}
+
+/* Tabs */
+.tabs{display:flex;backdrop-filter:var(--blur);background:var(--glass);}
+.tabs button{flex:1;padding:12px;border:none;background:transparent;color:var(--txt);font-weight:bold;}
+
+/* Pages */
+.page{display:none;height:calc(100vh - 48px);padding:10px;}
+.page.active{display:block}
+
+/* Panels */
+.panel{backdrop-filter:var(--blur);background:var(--glass);border-radius:14px;padding:10px;margin-bottom:10px;}
+
+/* Calculator */
+#screen{width:100%;font-size:22px;padding:10px;}
+.keys{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+.keys button{padding:12px;border:none;border-radius:12px;background:rgba(255,255,255,0.3);color:#000;font-size:16px;}
+
+/* Graph */
+canvas{width:100%;height:300px;background:#fff;border-radius:12px;}
+
+/* Saved */
+.saved-item{padding:8px;margin:5px 0;background:rgba(255,255,255,0.25);border-radius:8px;cursor:pointer;}
+</style>
+</head>
+
+<body>
+
+<!-- Splash -->
+<div id="splash">
+  <div>
+    <h1>SmartCalc ES</h1>
+    <p>Math • Physics • Chemistry</p>
+  </div>
+</div>
+
+<div id="bg"></div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button onclick="openTab(0)">حاسبة</button>
+  <button onclick="openTab(1)">جراف</button>
+  <button onclick="openTab(2)">محفوظات</button>
+  <button onclick="openTab(3)">إعدادات</button>
+</div>
+
+<!-- Calculator -->
+<div class="page active">
+  <div class="panel">
+    <input id="screen" placeholder="اكتب المعادلة">
+  </div>
+
+  <!-- العمليات + العلمية + الثوابت -->
+  <div class="panel keys">
+    <button onclick="add('/')">÷</button>
+    <button onclick="add('*')">×</button>
+    <button onclick="add('-')">−</button>
+    <button onclick="add('+')">+</button>
+    <button onclick="add('(')">(</button>
+
+    <button onclick="add('Math.sin(')">sin</button>
+    <button onclick="add('Math.cos(')">cos</button>
+    <button onclick="add('Math.tan(')">tan</button>
+    <button onclick="add('Math.log(')">log</button>
+    <button onclick="add('Math.ln(')">ln</button>
+
+    <button onclick="add('Math.PI')">π</button>
+    <button onclick="add('Math.E')">e</button>
+    <button onclick="add('!')">factorial</button>
+
+    <button onclick="add('9.81')">g</button>
+    <button onclick="add('3e8')">c</button>
+    <button onclick="add('6.67e-11')">G</button>
+
+    <button onclick="add('6.022e23')">Na</button>
+    <button onclick="add('8.314')">R</button>
+    <button onclick="add('96485')">F</button>
+    <button onclick="add('1.6e-19')">e⁻</button>
+
+    <button onclick="square()">x²</button>
+    <button onclick="power()">xʸ</button>
+  </div>
+
+  <!-- الأرقام في الأسفل -->
+  <div class="panel keys">
+    <button onclick="add('7')">7</button>
+    <button onclick="add('8')">8</button>
+    <button onclick="add('9')">9</button>
+    <button onclick="delOne()">⌫</button>
+    <button onclick="clearAll()">C</button>
+
+    <button onclick="add('4')">4</button>
+    <button onclick="add('5')">5</button>
+    <button onclick="add('6')">6</button>
+    <button onclick="add('(')">(</button>
+    <button onclick="add(')')">)</button>
+
+    <button onclick="add('1')">1</button>
+    <button onclick="add('2')">2</button>
+    <button onclick="add('3')">3</button>
+    <button onclick="calc()">=</button>
+    <button onclick="solve()">Solve</button>
+
+    <button onclick="add('0')">0</button>
+    <button onclick="add('.')">.</button>
+  </div>
+
+  <div class="panel">
+    <button onclick="saveEq()">💾 حفظ المعادلة</button>
+    <button onclick="cancelSave()">❌ إلغاء حفظ</button>
+  </div>
+</div>
+
+<!-- Graph -->
+<div class="page">
+  <div class="panel">
+    <input id="fx" placeholder="مثال: x*x; sin(x)">
+    <button onclick="draw()">رسم</button>
+    <button onclick="saveGraph()">💾 حفظ الجراف</button>
+  </div>
+  <canvas id="graph"></canvas>
+</div>
+
+<!-- Saved -->
+<div class="page">
+  <div class="panel" id="saved"></div>
+  <div class="panel">
+    <button onclick="exportData()">⬇️ تصدير</button>
+    <button onclick="importData()">⬆️ استيراد</button>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="page">
+  <div class="panel">
+    <label>اختر خلفية:</label>
+    <input type="file" accept="image/*" onchange="setBg(this)">
+    <label>شفافية الزجاج:</label>
+    <input type="range" min="0.1" max="0.6" step="0.05" oninput="setOpacity(this.value)">
+    <button onclick="toggleTheme()">🌙 / ☀️ وضع ليلي/نهاري</button>
+  </div>
+</div>
+
+<script>
+/* Splash */
+setTimeout(()=>document.getElementById('splash').remove(),2500)
+
+/* Tabs */
+function openTab(i){document.querySelectorAll('.page').forEach((p,n)=>p.classList.toggle('active',n===i))}
+
+/* Calculator */
+let screen=document.getElementById('screen')
+function add(v){screen.value+=v}
+function delOne(){screen.value=screen.value.slice(0,-1)}
+function clearAll(){screen.value=''}
+function square(){if(screen.value) screen.value+='^2'}
+function power(){screen.value+='^'}
+function calc(){try{screen.value=eval(screen.value)}catch{alert('خطأ')}} 
+function solve(){try{let eq=screen.value.replace('=','-(')+')';screen.value='x='+math.solve(eq,'x')}catch{alert('لا يمكن الحل')}}
+
+/* Save */
+let saved=[]
+function saveEq(){if(screen.value)saved.push(screen.value);renderSaved()}
+function cancelSave(){}
+function renderSaved(){let box=document.getElementById('saved');box.innerHTML='';saved.forEach(e=>{let d=document.createElement('div');d.className='saved-item';d.textContent=e;d.onclick=()=>screen.value=e;box.appendChild(d)})}
+
+/* Export / Import */
+function exportData(){let a=document.createElement('a');a.href='data:text/json,'+JSON.stringify(saved);a.download='smartcalc.json';a.click()}
+function importData(){let i=document.createElement('input');i.type='file';i.onchange=e=>{let r=new FileReader();r.onload=()=>{saved=JSON.parse(r.result);renderSaved()};r.readAsText(i.files[0])};i.click()}
+
+/* Graph */
+let c=document.getElementById('graph')
+let ctx=c.getContext('2d')
+function draw(){
+  ctx.clearRect(0,0,c.width,c.height)
+  let f=document.getElementById('fx').value
+  let funcs=f.split(';')
+  let colors=["red","blue","green","orange","purple"]
+  funcs.forEach((fn,i)=>{
+    ctx.strokeStyle=colors[i%colors.length]
+    ctx.beginPath()
+    for(let x=-100;x<100;x++){
+      let y=eval(fn.replace(/x/g,x/10))*10
+      if(x===-100) ctx.moveTo(x+150,150-y)
+      else ctx.lineTo(x+150,150-y)
+    }
+    ctx.stroke()
+  })
+}
+function saveGraph(){let a=document.createElement('a');a.href=c.toDataURL();a.download='graph.png';a.click()}
+
+/* Background */
+let bg=document.getElementById('bg')
+function setBg(i){let r=new FileReader();r.onload=()=>bg.style.backgroundImage=`url(${r.result})`;r.readAsDataURL(i.files[0])}
+function setOpacity(v){document.documentElement.style.setProperty('--glass',`rgba(255,255,255,${v})`)}
+function toggleTheme(){document.body.classList.toggle('light')}
+</script>
+
+</body>
+</html>
